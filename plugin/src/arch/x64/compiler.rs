@@ -812,7 +812,7 @@ fn derive_size(expr: &syn::Expr) -> Option<Size> {
                 syn::Lit::Byte(_) => Some(Size::BYTE),
                 syn::Lit::Int(i) => match i.base10_parse::<i64>() {
                     Err(_) => Some(Size::B_8),
-                    Ok(x) if x > 0x8000_0000 || x < -0x7FFF_FFFF => Some(Size::B_4),
+                    Ok(x) if x > 0x8000_0000 || x < -0x7FFF_FFFF => Some(Size::B_8),
                     Ok(x) if x > 0x8000 || x < -0x7FFF => Some(Size::B_4),
                     Ok(x) if x > 0x80 || x < -0x7F => Some(Size::B_2),
                     Ok(_) => Some(Size::BYTE),
