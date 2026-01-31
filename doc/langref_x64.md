@@ -131,3 +131,29 @@ Syntax | Equivalent expression
 #### Immediates
 
 Any operand which does not match the previously discussed forms will be interpreted as an immediate argument. This operand will be evaluated as an expression at runtime and the resulting value will be encoded. The size of the encoded value can be determined by a size prefix. If such a a prefix is not given, dynasm-rs will try to infer it from the value of the immediate, but this is only possible if the immediate is a simple constant. As this might change in the future, you should use explicit size overrides if the encoded displacement size matters.
+
+## Special instructions
+
+### 64-bit immediate mov
+
+There is a single instruction in the `x64` instruction set capable of loading a full 64-bit value or address in a single instruction. This is `mov reg, imm64`. To support the large `x64` code model with more than 2GB of code space, dynasm-rs also supports using label references in this instruction like `mov reg, ->label`, allowing anywhere in the x64 address space to be called with this instruction with a simple instruction sequence:
+
+```
+mov reg, ->label
+call reg
+```
+
+Note that in `x86` mode this instruction is not needed as full-size 32-bit values can be loaded with `mov reg, imm32` by default, and 32-bit addresses can be loaded using `lea reg, [->label]`.
+
+### 64-bit displacement movabs
+
+The `x64` instruction set defines another `mov` variant that allows values to be loaded and stored to a 64-bit absolute address. As this functionality is irregular with the rest of the instruction set, dynasm-rs uses the `movabs` (move absolute address) mnemonic for this functionality, similar to intel-style disassemblers. This instruction can be used in the following formats:
+
+* `movabs reg, addr` will load from `[addr]` to `reg`. I.e. `movabs rax, 0x1234` will load the value that is stored at address `0x1234` and store it to `rax`
+* `movabs addr, reg` will store from `reg` to `[addr]`. I.e. `movabs 0x1234, rax` will store the value in `reg` to the memory at address  `0x1234`
+
+`reg` in this case can only be `rax`, `eax`, `ax`, or `al`, depending on the size of the value being loaded/stored. `addr` can also be a label (i.e. `->label`), in which case the instruction can be used to load/store to the memory located at this label.
+
+This instruction is not present in x86 mode, as normal static 32-bit displacement addressing modes can be used to address the full memory space with any instruction that supports memory references.
+
+A note here is necessary on a crucial difference between Intel and AT&T style syntax. Due to historical reasons, AT&T style x64 assembly also has a `movabs` mnemonic, but this one is used for the 64-bit immediate variant discussed in the previous section, and it just uses the `mov` mnemonic for the 64-bit displacement variant. Meanwhile Intel/NASM style syntax uses the `movabs` mnemonic for the 64-bit displacement variant as shown in this section, and the `mov` mnemonic for the 64-bit immediate variant.
